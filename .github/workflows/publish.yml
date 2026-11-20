@@ -12,6 +12,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  actions: read
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -39,15 +40,32 @@ jobs:
           git add content
           git commit -m 'Update public content from Notion'
           git push
+      # 예약 실행은 내용이 바뀌었거나, 직전 실행이 실패했을 때(배포가 밀렸을 수 있음)만 배포합니다.
+      - name: Decide whether to deploy
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANGED: ${{ steps.sync.outputs.changed }}
+        run: |
+          deploy=false
+          if [ "${{ github.event_name }}" != "schedule" ] || [ "$CHANGED" = "true" ]; then
+            deploy=true
+          else
+            prev=$(gh api "repos/${{ github.repository }}/actions/workflows/publish.yml/runs?per_page=10" \
+              -q '[.workflow_runs[] | select(.id != ${{ github.run_id }} and .status == "completed")][0].conclusion' 2>/dev/null || echo unknown)
+            echo "Previous run: $prev"
+            [ "$prev" = "success" ] || deploy=true
+          fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
       - name: Build site
-        if: github.event_name != 'schedule' || steps.sync.outputs.changed == 'true'
+        if: steps.decide.outputs.deploy == 'true'
         run: node scripts/build.mjs
       - uses: actions/configure-pages@v5
-        if: github.event_name != 'schedule' || steps.sync.outputs.changed == 'true'
+        if: steps.decide.outputs.deploy == 'true'
       - uses: actions/upload-pages-artifact@v3
-        if: github.event_name != 'schedule' || steps.sync.outputs.changed == 'true'
+        if: steps.decide.outputs.deploy == 'true'
         with:
           path: _site
       - uses: actions/deploy-pages@v4
         id: deployment
-        if: github.event_name != 'schedule' || steps.sync.outputs.changed == 'true'
+        if: steps.decide.outputs.deploy == 'true'
