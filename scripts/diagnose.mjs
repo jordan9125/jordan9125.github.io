@@ -2,7 +2,8 @@
 import { createClient } from './notion.mjs';
 const c = createClient(process.env.NOTION_TOKEN);
 const tryIt = async (label, f) => { try { const r = await f(); console.log('OK  ', label, JSON.stringify(r).slice(0, 1500)); } catch (e) { console.log('FAIL', label, e.message); } };
-await tryIt('성경 page children', async () => (await c.children('a6b53769da8c48bab9244495aa4fb035')).map((b) => b.type + (b.type === 'child_page' ? ':' + b.child_page.title : '') + (b.type === 'unsupported' ? ':' + JSON.stringify(b.unsupported) : '')));
-await tryIt('마가복음 row page', async () => { const p = await c.page('3d2ce9f8117e8055a056dc27554dd6ba'); return { parent: p.parent, props: Object.keys(p.properties) }; });
-await tryIt('wiki data source GET', () => fetch('https://api.notion.com/v1/data_sources/0d0244c5-09fe-4833-8b62-be7cac563996', { headers: { Authorization: 'Bearer ' + process.env.NOTION_TOKEN, 'Notion-Version': '2025-09-03' } }).then((r) => r.json()).then((j) => ({ object: j.object, code: j.code, message: j.message, parent: j.parent, database_parent: j.database_parent })));
-await tryIt('마가복음 글 목록 database', async () => (await c.database('41ece9f8117e813aa3e7d4064c5b62ce')).data_sources);
+const kids = await c.children('a6b53769da8c48bab9244495aa4fb035');
+for (const b of kids.filter((b) => b.type === 'synced_block')) {
+  await tryIt('synced_block ' + b.id, async () => ({ synced_from: b.synced_block?.synced_from, has_children: b.has_children, children: (await c.children(b.id)).map((x) => x.type + (x.child_database ? ':' + x.child_database.title : '') + (x.child_page ? ':' + x.child_page.title : '')) }));
+}
+await tryIt('wiki database GET', () => c.database('f57f7a091697427eb8db316569d0ece9').then((d) => ({ parent: d.parent, ds: d.data_sources })));
