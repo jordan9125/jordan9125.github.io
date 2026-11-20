@@ -5,6 +5,7 @@
   "siteUrl": "https://jordan9125.github.io",
   "base": "/",
   "notion": {
+    "rootPage": "a6b53769da8c48bab9244495aa4fb035",
     "database": "f57f7a091697427eb8db316569d0ece9",
     "dataSource": "0d0244c5-09fe-4833-8b62-be7cac563996",
     "publicProperty": "공개"

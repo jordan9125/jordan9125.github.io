@@ -237,6 +237,10 @@ export async function run() {
         // 어떤 연결의 토큰인지 알려 주면 설정 실수를 찾기 쉽습니다(토큰 자체는 출력하지 않음).
         const me = await client.me().catch(() => null);
         console.log(`::error::The token belongs to the Notion connection "${me?.name || '?'}" (workspace: ${me?.bot?.workspace_name || '?'}). Share the 성경 page with that connection.`);
+        if (config.notion.rootPage) {
+          const root = await client.page(config.notion.rootPage).then(() => 'can read', (x) => 'cannot read (' + x.message + ')');
+          console.log(`::error::Connection ${root} the 성경 page itself.`);
+        }
       }
       throw e;
     }

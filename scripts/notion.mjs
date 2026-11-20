@@ -36,7 +36,9 @@ export function createClient(token, { fetcher = fetch, sleep = (ms) => new Promi
         await sleep(Math.min(30, after) * 1000);
         continue;
       }
-      throw new NotionError(`Notion request failed (HTTP ${res.status}) for ${method} ${path.split('?')[0]}`, res.status);
+      let detail = '';
+      try { const b = await res.json(); detail = b?.code ? ` [${b.code}: ${String(b.message || '').slice(0, 200)}]` : ''; } catch {}
+      throw new NotionError(`Notion request failed (HTTP ${res.status}) for ${method} ${path.split('?')[0]}${detail}`, res.status);
     }
     throw new NotionError('Notion request failed after retries', 0);
   }
