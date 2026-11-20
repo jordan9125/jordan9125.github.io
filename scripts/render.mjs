@@ -91,6 +91,9 @@ export function blocks(list, ctx) {
       case 'child_page':
         out.push(pageCards(group('child_page'), ctx));
         break;
+      case 'child_db':
+        out.push(pageCards(b.items || [], ctx));
+        break;
       case 'paragraph': {
         const h = rich(b.text, ctx);
         if (h.trim()) out.push(`<p>${h}</p>`);

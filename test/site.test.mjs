@@ -54,12 +54,13 @@ test('chapter sub-pages render as a number grid; numbered headings get a badge',
   assert.match(h, /<h3>아브라함 <span class="sub">믿음의 조상<\/span><\/h3>/);
 });
 
-function fakeNotion({ rows, pages, children }) {
+function fakeNotion({ rows, pages, children, dbs = {} }) {
   const calls = { children: [], page: [] };
   return {
     calls,
     client: {
-      queryDataSource: async () => rows,
+      queryDataSource: async (id) => (id === 'ds' ? rows : dbs[id.replace(/^ds-/, '')] || []),
+      database: async (id) => ({ data_sources: [{ id: 'ds-' + id }] }),
       page: async (id) => { calls.page.push(id); if (!pages[id]) throw new NotionError('Notion request failed (HTTP 404)', 404); return pages[id]; },
       children: async (id) => { calls.children.push(id); return children[id] || []; },
     },
@@ -145,4 +146,36 @@ test('build makes home, article and search pages from synced content', async () 
 test('build shows a friendly empty state before anything is public', () => {
   const files = buildSite({ index: { rows: [] }, pages: new Map() }, { siteTitle: '성경 위키', tagline: 't' });
   assert.match(files.get('index.html'), /아직 공개된 글이 없어요/);
+});
+
+test('a database inside a page publishes only its checked rows, in 순서 order, even when the page itself is unchanged', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'wiki-'));
+  const M = ID('a1'), DB = ID('db');
+  const r = (id, title, pub, order) => ({ object: 'page', id, created_time: '2026-01-01T00:00:00Z', last_edited_time: '2026-11-01T00:00:00Z',
+    properties: { 제목: titleProp(title), 공개: { type: 'checkbox', checkbox: pub }, 순서: { type: 'number', number: order } } });
+  const data = {
+    rows: [row(M, '마가복음', { type: '다 아는 성경' })],
+    pages: {},
+    children: {
+      [M]: [{ object: 'block', id: DB, type: 'child_database', has_children: false, child_database: { title: '마가복음 글 목록' } }],
+      [ID('c2')]: [para(ID('p2'), rt('2장 본문'))],
+      [ID('c1')]: [para(ID('p1'), rt('1장 본문'))],
+    },
+    dbs: { [DB]: [r(ID('c2'), '마가복음 2장', true, 4), r(ID('c1'), '마가복음 1장', true, 3), r(ID('c9'), '작성 가이드', false, 1)] },
+  };
+  const r1 = await syncContent({ client: fakeNotion(data).client, dir, dataSource: 'ds', log: () => {} });
+  assert.equal(r1.pages, 3);
+  const page = JSON.parse(await readFile(join(dir, 'pages', M + '.json'), 'utf8'));
+  assert.deepEqual(page.blocks[0].items.map((i) => i.title), ['마가복음 1장', '마가복음 2장']);
+  const html = buildSite(await loadContent(dir), { siteTitle: 's', tagline: 't' }).get(`p/${M.slice(-12)}/index.html`);
+  assert.ok(html.indexOf('마가복음 1장') < html.indexOf('마가복음 2장'));
+  assert.doesNotMatch(html, /작성 가이드/);
+
+  // 바깥 페이지는 그대로인데 2장의 공개를 끈 경우
+  data.dbs[DB][0].properties.공개.checkbox = false;
+  const n2 = fakeNotion(data);
+  const r2 = await syncContent({ client: n2.client, dir, dataSource: 'ds', log: () => {} });
+  assert.equal(r2.changed, true);
+  assert.equal(r2.pages, 2);
+  assert.ok(!n2.calls.children.includes(M));
 });

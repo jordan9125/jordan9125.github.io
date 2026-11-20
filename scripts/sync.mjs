@@ -42,7 +42,7 @@ function eachBlock(blocks, fn) {
   for (const b of blocks || []) { fn(b); eachBlock(b.children, fn); }
 }
 
-export async function syncContent({ client, dir = 'content', dataSource, publicProp = '공개', fetcher = fetch, log = () => {} }) {
+export async function syncContent({ client, dir = 'content', dataSource, publicProp = '공개', orderProp = '순서', fetcher = fetch, log = () => {} }) {
   const pagesDir = join(dir, 'pages');
   const mediaDir = join(dir, 'media');
   await mkdir(pagesDir, { recursive: true });
@@ -67,10 +67,45 @@ export async function syncContent({ client, dir = 'content', dataSource, publicP
       if (++counter.n > LIMITS.blocksPerPage) throw new Error('Page has too many blocks');
       const n = block(b);
       if (!n) continue;
-      if (b.has_children && n.type !== 'child_page' && depth < 12) n.children = await tree(b.id, depth + 1, counter);
+      if (b.has_children && n.type !== 'child_page' && n.type !== 'child_db' && depth < 12) n.children = await tree(b.id, depth + 1, counter);
       out.push(n);
     }
     return out;
+  }
+
+  // 페이지 안의 데이터베이스(예: 마가복음 글 목록)는 매번 다시 읽습니다.
+  // 체크박스를 바꿔도 바깥 페이지의 수정 시각은 바뀌지 않기 때문입니다.
+  const rowPages = new Map();
+  async function fillDatabases(blocks) {
+    const dbs = [];
+    eachBlock(blocks, (b) => { if (b.type === 'child_db') dbs.push(b); });
+    for (const node of dbs) {
+      node.items = [];
+      let results;
+      try {
+        const db = await client.database(node.db);
+        const ds = db?.data_sources?.[0]?.id;
+        if (!ds) continue;
+        results = await client.queryDataSource(ds);
+      } catch (e) {
+        if (e instanceof NotionError && e.status === 404) { log(`::warning::Database ${node.db} is not shared with the connection; skipped.`); continue; }
+        throw e;
+      }
+      const live = results.filter((p) => !p.in_trash && !p.archived && !p.is_archived);
+      if (live.length && !live.some((p) => p.properties?.[publicProp]?.type === 'checkbox')) {
+        log(`::notice::Database "${node.title}" has no "${publicProp}" checkbox; nothing in it is published.`);
+        continue;
+      }
+      const order = (p) => { const n = p.properties?.[orderProp]?.number; return typeof n === 'number' ? n : Infinity; };
+      const picked = live.filter((p) => p.properties?.[publicProp]?.checkbox === true)
+        .sort((a, b) => order(a) - order(b) || String(a.created_time).localeCompare(String(b.created_time)));
+      for (const p of picked) {
+        const id = cleanId(p.id);
+        rowPages.set(id, p);
+        node.items.push({ page: id, title: pageTitle(p) });
+      }
+    }
+    return blocks;
   }
 
   async function mediaReady(blocks) {
@@ -112,11 +147,11 @@ export async function syncContent({ client, dir = 'content', dataSource, publicP
     const cached = old.get(id);
     let blocks;
     if (cached && cached.edited === edited && await mediaReady(cached.blocks)) {
-      blocks = cached.blocks;
+      blocks = await fillDatabases(cached.blocks);
     } else {
       blocks = await tree(id, 0, { n: 0 });
       await downloadImages(blocks);
-      blocks = prune(blocks);
+      blocks = await fillDatabases(prune(blocks));
       fetched++;
     }
     const rec = {
@@ -131,9 +166,12 @@ export async function syncContent({ client, dir = 'content', dataSource, publicP
     pages.set(id, rec);
     if (depth >= LIMITS.depth) return;
     const kids = [];
-    eachBlock(blocks, (b) => { if (b.type === 'child_page') kids.push(b.page); });
+    eachBlock(blocks, (b) => {
+      if (b.type === 'child_page') kids.push(b.page);
+      if (b.type === 'child_db') for (const it of b.items) kids.push(it.page);
+    });
     for (const kid of kids) {
-      try { await visit(kid, id, depth + 1); }
+      try { await visit(kid, id, depth + 1, rowPages.get(kid)); }
       catch (e) { if (e instanceof NotionError && e.status === 404) log(`::warning::Sub-page ${kid} is not shared with the connection; skipped.`); else throw e; }
     }
   }

@@ -130,12 +130,14 @@ export function block(b) {
     }
     case 'child_page':
       return { ...base, type: 'child_page', page: cleanId(b.id), title: v.title || '' };
+    case 'child_database':
+      return { ...base, type: 'child_db', db: cleanId(b.id), title: v.title || '', items: [] };
     case 'link_to_page': {
       const id = v.page_id || null;
       return id ? { ...base, type: 'page_link', page: cleanId(id) } : null;
     }
     default:
-      // child_database, table_of_contents, breadcrumb, template, unsupported 등
+      // table_of_contents, breadcrumb, template, unsupported 등
       return null;
   }
 }

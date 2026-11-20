@@ -59,6 +59,7 @@ export function createClient(token, { fetcher = fetch, sleep = (ms) => new Promi
   return {
     queryDataSource: (id) => paginate((cursor) => request('POST', `/data_sources/${id}/query`, { page_size: 100, ...(cursor ? { start_cursor: cursor } : {}) })),
     page: (id) => request('GET', `/pages/${id}`),
+    database: (id) => request('GET', `/databases/${id}`),
     children: (id) => paginate((cursor) => request('GET', `/blocks/${id}/children?page_size=100${cursor ? '&start_cursor=' + encodeURIComponent(cursor) : ''}`)),
   };
 }

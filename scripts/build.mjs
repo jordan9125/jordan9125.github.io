@@ -43,7 +43,13 @@ export function buildSite({ index, pages }, config) {
   // 각 페이지의 하위 페이지 순서
   const childrenOf = (p) => {
     const out = [];
-    const walk = (bs) => { for (const b of bs || []) { if (b.type === 'child_page' && pages.has(b.page)) out.push(b.page); walk(b.children); } };
+    const walk = (bs) => {
+      for (const b of bs || []) {
+        if (b.type === 'child_page' && pages.has(b.page)) out.push(b.page);
+        if (b.type === 'child_db') for (const it of b.items || []) if (pages.has(it.page)) out.push(it.page);
+        walk(b.children);
+      }
+    };
     walk(p.blocks);
     return out;
   };
