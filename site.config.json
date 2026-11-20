@@ -1,0 +1,24 @@
+{
+  "siteTitle": "성경 위키",
+  "heroTitle": "성경을 읽는 좌표",
+  "tagline": "시간이 있을 때마다 추가, 수정하고 있습니다.",
+  "siteUrl": "https://jordan9125.github.io",
+  "base": "/",
+  "notion": {
+    "dataSource": "0d0244c5-09fe-4833-8b62-be7cac563996",
+    "publicProperty": "공개"
+  },
+  "typeOrder": ["다 아는 성경", "다 아는 주제", "설교/강의"],
+  "gridTypes": ["다 아는 성경"],
+  "otherLabel": "그 밖에",
+  "featured": [
+    {
+      "id": "40fce9f8117e8097b35eca3f437be272",
+      "summary": "본문이 대략 어느 시대의 어느 이야기를 하는지 파악하는 좌표. 족장 시대부터 중간기까지 한 번에 훑어봅니다.",
+      "links": [{ "title": "역사 퀴즈", "url": "https://wkdyd5-ui.github.io/bible-timeline/quiz/" }]
+    }
+  ],
+  "links": [
+    { "title": "이스라엘 왕조 연대표", "description": "왕·선지자·주변 국가를 한 화면에", "url": "https://wkdyd5-ui.github.io/bible-timeline/" }
+  ]
+}
