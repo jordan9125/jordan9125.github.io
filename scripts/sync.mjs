@@ -223,7 +223,16 @@ export async function run() {
     console.log('::notice::NOTION_TOKEN is not configured. Publishing existing content only.');
   } else {
     const client = createClient(process.env.NOTION_TOKEN);
-    ({ changed } = await syncContent({ client, dataSource: config.notion.dataSource, publicProp: config.notion.publicProperty || '공개', log: console.log }));
+    try {
+      ({ changed } = await syncContent({ client, dataSource: config.notion.dataSource, publicProp: config.notion.publicProperty || '공개', log: console.log }));
+    } catch (e) {
+      if (e instanceof NotionError && e.status === 404) {
+        // 어떤 연결의 토큰인지 알려 주면 설정 실수를 찾기 쉽습니다(토큰 자체는 출력하지 않음).
+        const me = await client.me().catch(() => null);
+        console.log(`::error::The token belongs to the Notion connection "${me?.name || '?'}" (workspace: ${me?.bot?.workspace_name || '?'}). Share the 성경 page with that connection.`);
+      }
+      throw e;
+    }
     console.log(changed ? 'Public content changed.' : 'No public content change.');
   }
   if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `changed=${changed}\n`);
