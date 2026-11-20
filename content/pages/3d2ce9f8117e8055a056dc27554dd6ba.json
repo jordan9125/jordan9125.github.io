@@ -1,0 +1,24 @@
+{
+ "id": "3d2ce9f8117e8055a056dc27554dd6ba",
+ "title": "마가복음",
+ "parent": null,
+ "edited": "2026-11-20T15:15:00.000Z",
+ "row": {
+  "type": "다 아는 성경",
+  "tags": []
+ },
+ "blocks": [
+  {
+   "id": "41ece9f8117e813aa3e7d4064c5b62ce",
+   "type": "child_db",
+   "db": "41ece9f8117e813aa3e7d4064c5b62ce",
+   "title": "마가복음 글 목록",
+   "items": []
+  },
+  {
+   "id": "41ece9f8117e803986bdcacf31d2b312",
+   "type": "paragraph",
+   "text": []
+  }
+ ]
+}
