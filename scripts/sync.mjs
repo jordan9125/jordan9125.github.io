@@ -224,7 +224,14 @@ export async function run() {
   } else {
     const client = createClient(process.env.NOTION_TOKEN);
     try {
-      ({ changed } = await syncContent({ client, dataSource: config.notion.dataSource, publicProp: config.notion.publicProperty || '공개', log: console.log }));
+      // 데이터베이스 id로 실제 데이터 소스 id를 찾습니다(없으면 설정값 사용).
+      let dataSource = config.notion.dataSource;
+      if (config.notion.database) {
+        const db = await client.database(config.notion.database);
+        dataSource = db?.data_sources?.[0]?.id || dataSource;
+        console.log(`Wiki data source: ${dataSource}`);
+      }
+      ({ changed } = await syncContent({ client, dataSource, publicProp: config.notion.publicProperty || '공개', log: console.log }));
     } catch (e) {
       if (e instanceof NotionError && e.status === 404) {
         // 어떤 연결의 토큰인지 알려 주면 설정 실수를 찾기 쉽습니다(토큰 자체는 출력하지 않음).
