@@ -13,24 +13,7 @@
    "type": "child_db",
    "db": "41ece9f8117e813aa3e7d4064c5b62ce",
    "title": "마가복음 글 목록",
-   "items": [
-    {
-     "page": "3d2ce9f8117e80bd99cac97105fe8851",
-     "title": "마가복음 1장"
-    },
-    {
-     "page": "3d2ce9f8117e802caa69d2e12c5e6944",
-     "title": "마가복음 2장"
-    },
-    {
-     "page": "3e7ce9f8117e80f4a0f4d6120de2f80b",
-     "title": "마가복음 3장"
-    },
-    {
-     "page": "3f6ce9f8117e80d6a941d2d8c6120b2f",
-     "title": "마가복음 4장"
-    }
-   ]
+   "items": []
   },
   {
    "id": "41ece9f8117e803986bdcacf31d2b312",
