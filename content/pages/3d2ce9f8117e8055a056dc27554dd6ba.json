@@ -13,7 +13,12 @@
    "type": "child_db",
    "db": "41ece9f8117e813aa3e7d4064c5b62ce",
    "title": "마가복음 글 목록",
-   "items": []
+   "items": [
+    {
+     "page": "244ec1dbea18410cb3c12c280afe76d8",
+     "title": "마가복음 8장"
+    }
+   ]
   },
   {
    "id": "41ece9f8117e803986bdcacf31d2b312",
